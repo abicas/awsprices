@@ -22,9 +22,20 @@ The output JSON follows the following format:
 
                }
             },
-            {  },
-            {  },
-            {  }
+            {  
+               "os":"SUSE",
+               "sw":"NA",
+               "mode":"Reserved",
+               "unit":"Hrs",
+               "unitprice":"0.1553000000",
+               "unitpricedesc":"SUSE Linux (Amazon VPC), a1.2xlarge reserved instance applied",
+               "terms":{  
+                  "LeaseContractLength":"3yr",
+                  "OfferingClass":"convertible",
+                  "PurchaseOption":"No Upfront"
+               }
+            },
+            ...
          ]
       }
 `
