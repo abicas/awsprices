@@ -42,12 +42,12 @@ def get_instance_prices(instance_name, region):
                 details['memory'] = xprice["product"]["attributes"]["memory"]
                 details['vcpu'] = xprice["product"]["attributes"]["vcpu"]
                 details['family'] = xprice["product"]["attributes"]["instanceFamily"]
-                if 'physicalProcessor' in xprice : details['processor'] = xprice["product"]["attributes"]["physicalProcessor"]
-                if 'clockSpeed' in xprice : details['clock'] = xprice["product"]["attributes"]["clockSpeed"] 
-                if 'networkPerformance' in xprice : details['network'] = xprice["product"]["attributes"]["networkPerformance"]
-                if 'currentGeneration' in xprice : details['current'] = xprice["product"]["attributes"]["currentGeneration"]
-                if 'dedicatedEbsThroughput' in xprice : details['ebsperf'] = xprice["product"]["attributes"]["dedicatedEbsThroughput"]
-                if 'storage' in xprice : details['storage'] = xprice["product"]["attributes"]["storage"]
+                if 'physicalProcessor' in price : details['processor'] = xprice["product"]["attributes"]["physicalProcessor"]
+                if 'clockSpeed' in price : details['clock'] = xprice["product"]["attributes"]["clockSpeed"] 
+                if 'networkPerformance' in price : details['network'] = xprice["product"]["attributes"]["networkPerformance"]
+                if 'currentGeneration' in price : details['current'] = xprice["product"]["attributes"]["currentGeneration"]
+                if 'dedicatedEbsThroughput' in price : details['ebsperf'] = xprice["product"]["attributes"]["dedicatedEbsThroughput"]
+                if 'storage' in price : details['storage'] = xprice["product"]["attributes"]["storage"]
 
                 for item in xprice["terms"]:
                         pricetmp = {}
