@@ -39,6 +39,8 @@ def get_instance_prices(instance_name, region):
         for price in response['PriceList']:
                 xprice = json.loads(price)
                 details['instance'] = xprice["product"]["attributes"]["instanceType"]
+                details['region'] = region
+
                 details['memory'] = xprice["product"]["attributes"]["memory"]
                 details['vcpu'] = xprice["product"]["attributes"]["vcpu"]
                 details['family'] = xprice["product"]["attributes"]["instanceFamily"]
