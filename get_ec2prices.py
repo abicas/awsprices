@@ -24,50 +24,69 @@ region_mapping_dict = {'us-east-2': 'US East (Ohio)',
 pricing = boto3.client('pricing')
 
 def get_instance_prices(instance_name, region):
-        queryfilter = [ 
-                {'Type' :'TERM_MATCH', 'Field':'location',        'Value':region_mapping_dict[region]},
-                {'Type' :'TERM_MATCH', 'Field':'termType',        'Value':'OnDemand'            },
-                {'Type' :'TERM_MATCH', 'Field':'productFamily',   'Value':'Compute Instance'    },
-                {'Type' :'TERM_MATCH', 'Field':'tenancy',         'Value':'Shared'              },
-                {'Type' :'TERM_MATCH', 'Field':'instanceType',    'Value':instance_name         },
-                {'Type' :'TERM_MATCH', 'Field':'capacitystatus',  'Value':'Used'                },
-        ]
-        response = pricing.get_products(ServiceCode='AmazonEC2',Filters=queryfilter,MaxResults=100)
-        details={}
-        details['price'] = []
+		queryfilter = [ 
+				{'Type' :'TERM_MATCH', 'Field':'location',		'Value':region_mapping_dict[region]},
+				{'Type' :'TERM_MATCH', 'Field':'operatingSystem', 'Value':'Linux'			},
+				{'Type' :'TERM_MATCH', 'Field':'preInstalledSw',  'Value':'NA'	},
+				{'Type' :'TERM_MATCH', 'Field':'productFamily',   'Value':'Compute Instance'	},
+				{'Type' :'TERM_MATCH', 'Field':'tenancy',		 'Value':'Shared'			  },
+				{'Type' :'TERM_MATCH', 'Field':'instanceType',	'Value':instance_name		 },
+				{'Type' :'TERM_MATCH', 'Field':'capacitystatus',  'Value':'Used'				},
+		]
+		response = pricing.get_products(ServiceCode='AmazonEC2',Filters=queryfilter,MaxResults=100)
+		details={}
+		details['price'] = {}
 
-        for price in response['PriceList']:
-                xprice = json.loads(price)
-                details['instance'] = xprice["product"]["attributes"]["instanceType"]
-                details['region'] = region
+		for price in response['PriceList']:
+				xprice = json.loads(price)
+				details['instance'] = xprice["product"]["attributes"]["instanceType"]
+				details['region'] = region
+				details['memory'] = xprice["product"]["attributes"]["memory"]
+				details['vcpu'] = xprice["product"]["attributes"]["vcpu"]
+				details['family'] = xprice["product"]["attributes"]["instanceFamily"]
+				if 'physicalProcessor' in price : details['processor'] = xprice["product"]["attributes"]["physicalProcessor"]
+				if 'clockSpeed' in price : details['clock'] = xprice["product"]["attributes"]["clockSpeed"] 
+				if 'networkPerformance' in price : details['network'] = xprice["product"]["attributes"]["networkPerformance"]
+				if 'currentGeneration' in price : details['current'] = xprice["product"]["attributes"]["currentGeneration"]
+				if 'dedicatedEbsThroughput' in price : details['ebsperf'] = xprice["product"]["attributes"]["dedicatedEbsThroughput"]
+				if 'storage' in price : details['storage'] = xprice["product"]["attributes"]["storage"]
+				details['os'] = xprice["product"]["attributes"]["operatingSystem"]
+				details['sw'] = xprice["product"]["attributes"]["preInstalledSw"]
+				for item in xprice["terms"]:
+						
+						od = item
+						
+						for id1 in list(xprice["terms"][od]):
+							if od == 'Reserved':
+								RIperiod = xprice["terms"][od][id1]['termAttributes']['LeaseContractLength']
+								RItype = xprice["terms"][od][id1]['termAttributes']['OfferingClass']
+								RIpay = xprice["terms"][od][id1]['termAttributes']['PurchaseOption']
+								if od not in details['price']: 
+									details['price'][od] = {}
+								if RIperiod not in details['price'][od]:
+									details['price'][od][RIperiod] = {}
+								if RItype not in details['price'][od][RIperiod]:
+									details['price'][od][RIperiod][RItype]={}
+								if RIpay not in details['price'][od][RIperiod][RItype]: 
+									details['price'][od][RIperiod][RItype][RIpay] = []
+							else: 
+								details['price'][od] = {}
+							
+							
+							for id2 in  list(xprice["terms"][od][id1]['priceDimensions']):
+								miniprice = {}
+								miniprice['unitprice'] =  xprice["terms"][od][id1]['priceDimensions'][id2]['pricePerUnit']['USD']
+								miniprice['unit'] =  xprice["terms"][od][id1]['priceDimensions'][id2]['unit']
+								miniprice['descr'] =  xprice["terms"][od][id1]['priceDimensions'][id2]['description']
+							
+								if od == 'Reserved':
+									details['price'][od][RIperiod][RItype][RIpay].append(miniprice)
+								else: 
+									details['price'][od] = miniprice
 
-                details['memory'] = xprice["product"]["attributes"]["memory"]
-                details['vcpu'] = xprice["product"]["attributes"]["vcpu"]
-                details['family'] = xprice["product"]["attributes"]["instanceFamily"]
-                if 'physicalProcessor' in price : details['processor'] = xprice["product"]["attributes"]["physicalProcessor"]
-                if 'clockSpeed' in price : details['clock'] = xprice["product"]["attributes"]["clockSpeed"] 
-                if 'networkPerformance' in price : details['network'] = xprice["product"]["attributes"]["networkPerformance"]
-                if 'currentGeneration' in price : details['current'] = xprice["product"]["attributes"]["currentGeneration"]
-                if 'dedicatedEbsThroughput' in price : details['ebsperf'] = xprice["product"]["attributes"]["dedicatedEbsThroughput"]
-                if 'storage' in price : details['storage'] = xprice["product"]["attributes"]["storage"]
+						
+		return details
 
-                for item in xprice["terms"]:
-                        pricetmp = {}
-                        pricetmp['os'] = xprice["product"]["attributes"]["operatingSystem"]
-                        pricetmp['sw'] = xprice["product"]["attributes"]["preInstalledSw"]
-                        od = item
-                        id1 = list(xprice["terms"][od])[0]
-                        id2 = list(xprice["terms"][od][id1]['priceDimensions'])[0]
-                        unitprice =  xprice["terms"][od][id1]['priceDimensions'][id2]['pricePerUnit']['USD']
-                        unit =  xprice["terms"][od][id1]['priceDimensions'][id2]['unit']
-                        descr =  xprice["terms"][od][id1]['priceDimensions'][id2]['description']
-                        pricetmp['mode'] = od
-                        pricetmp['unit'] = unit
-                        pricetmp['unitprice'] = unitprice
-                        pricetmp['unitpricedesc'] = descr
-                        pricetmp['terms'] = xprice["terms"][od][id1]['termAttributes']
-                        details['price'].append((pricetmp))
-        return details
         
 def get_instances(Token, values):
         response = pricing.get_attribute_values(ServiceCode='AmazonEC2', AttributeName="instanceType", NextToken=Token,MaxResults=100)
